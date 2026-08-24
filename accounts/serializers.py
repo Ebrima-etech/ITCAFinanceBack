@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Role
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -18,6 +18,20 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+
+# Public self-registration. Always creates a STUDENT account, regardless
+# of what the client sends - role is never client-controlled here, unlike
+# CreateUserSerializer which is admin-only.
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    class Meta:
+        model = User
+        fields = ['name', 'email', 'password']
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data, role=Role.STUDENT)
 
 
 class UpdateUserSerializer(serializers.ModelSerializer):

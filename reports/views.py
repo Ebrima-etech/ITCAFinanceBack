@@ -1,16 +1,16 @@
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from accounts.permissions import IsInternalUser
 from ledger.models import Transaction
 
 
 # Turns raw ledger data into an exportable CSV for annual budgeting,
 # funding proposals, and committee reviews.
 class TransactionsReportView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsInternalUser]
 
     def get(self, request):
         from_date = parse_date(request.query_params.get('from', ''))

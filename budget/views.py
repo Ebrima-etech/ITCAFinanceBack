@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from django.db.models import Sum
 from django.utils import timezone
-from rest_framework.permissions import IsAuthenticated
+from accounts.permissions import IsInternalUser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
@@ -26,10 +26,11 @@ def actual_by_category(year):
     return {row['category']: float(row['total'] or 0) for row in rows}
 
 
-# Budget planning is deliberately open to every logged-in role, not just
-# finance officers - it's the committee's proposed spending.
+# Budget planning is deliberately open to every internal role (including
+# committee members, not just finance officers) - it's the committee's
+# proposed spending. Self-registered students still can't touch it.
 class BudgetListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsInternalUser]
 
     def get(self, request):
         year = int(request.query_params.get('year', date.today().year + 1))
@@ -63,7 +64,7 @@ class BudgetListCreateView(APIView):
 
 
 class BudgetDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsInternalUser]
 
     def get_object(self, pk):
         try:

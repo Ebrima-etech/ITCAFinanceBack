@@ -23,6 +23,10 @@ class Role(models.TextChoices):
     ADMIN = 'ADMIN'
     FINANCE_OFFICER = 'FINANCE_OFFICER'
     COMMITTEE_MEMBER = 'COMMITTEE_MEMBER'
+    # Self-registered, not admin-appointed. No access to the internal
+    # ledger/budget/dashboard - that's reserved for the three roles above
+    # until the public transparency views (see the landing page) exist.
+    STUDENT = 'STUDENT'
 
 
 # Everyone who can log in. role decides what they're allowed to do.

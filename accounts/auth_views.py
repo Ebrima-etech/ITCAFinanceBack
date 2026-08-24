@@ -5,7 +5,28 @@ from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import AccessToken
 from activitylog.utils import record_activity
-from .serializers import UserSerializer
+from .serializers import UserSerializer, RegisterSerializer
+
+
+# Public self-registration for students. Always lands as role STUDENT
+# (see RegisterSerializer) - no internal financial access until the
+# public transparency views exist.
+class RegisterView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        token = AccessToken.for_user(user)
+
+        record_activity(action='REGISTER', entity_type='User', entity_id=str(user.id), actor=user)
+
+        return Response({
+            'access_token': str(token),
+            'user': UserSerializer(user).data,
+        }, status=201)
 
 
 class LoginView(APIView):

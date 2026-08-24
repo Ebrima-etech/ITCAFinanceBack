@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from django.utils import timezone
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from accounts.permissions import IsInternalUser
 from ledger.models import Transaction, is_inflow
 from events.models import Event
 
@@ -11,7 +11,7 @@ from events.models import Event
 # Stores nothing of its own. Reads the ledger and events, then serves up
 # the summaries, charts, and profit/loss figures the dashboard screen shows.
 class DashboardView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsInternalUser]
 
     def get(self, request):
         year = int(request.query_params.get('year', date.today().year))
