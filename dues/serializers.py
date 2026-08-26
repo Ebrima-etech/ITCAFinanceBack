@@ -20,3 +20,9 @@ class CreateDueSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('0.01'))
     method = serializers.ChoiceField(choices=['CASH', 'ONLINE'])
     paid_at = serializers.DateTimeField()
+
+
+class UpdateDueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MembershipDue
+        fields = ['member_name', 'member_email', 'amount', 'method', 'paid_at']

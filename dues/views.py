@@ -1,12 +1,13 @@
 from django.db import transaction as db_transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 
 from accounts.permissions import ReadOnlyOrAdminFinance
 from activitylog.utils import record_activity
 from ledger.models import Transaction, TransactionType
 from .models import MembershipDue
-from .serializers import MembershipDueSerializer, CreateDueSerializer
+from .serializers import MembershipDueSerializer, CreateDueSerializer, UpdateDueSerializer
 
 
 # Dues arrive two ways - online payment, or cash handed over and typed in
@@ -56,3 +57,39 @@ class MembershipDueListCreateView(APIView):
         )
 
         return Response(MembershipDueSerializer(due).data, status=201)
+
+
+class MembershipDueDetailView(APIView):
+    permission_classes = [ReadOnlyOrAdminFinance]
+
+    def get_object(self, pk):
+        try:
+            return MembershipDue.objects.get(pk=pk)
+        except MembershipDue.DoesNotExist:
+            raise NotFound('Membership due not found')
+
+    def patch(self, request, pk):
+        due = self.get_object(pk)
+        serializer = UpdateDueSerializer(due, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        due = serializer.save()
+
+        record_activity(
+            action='UPDATE', entity_type='MembershipDue', entity_id=str(due.id),
+            actor=request.user, details={'changed': list(request.data.keys())},
+        )
+
+        return Response(MembershipDueSerializer(due).data)
+
+    def delete(self, request, pk):
+        due = self.get_object(pk)
+        due_id = str(due.id)
+
+        with db_transaction.atomic():
+            txn = due.transaction
+            txn.delete()
+            due.delete()
+
+        record_activity(action='DELETE', entity_type='MembershipDue', entity_id=due_id, actor=request.user)
+
+        return Response({'id': due_id})

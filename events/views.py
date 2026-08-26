@@ -60,6 +60,15 @@ class EventDetailView(APIView):
 
         return Response(EventListSerializer(event).data)
 
+    def delete(self, request, pk):
+        event = self.get_object(pk)
+        event_id = str(event.id)
+        event.delete()
+
+        record_activity(action='DELETE', entity_type='Event', entity_id=event_id, actor=request.user)
+
+        return Response({'id': event_id})
+
 
 # Ticketing data lands here as a CSV of `description,amount,occurredAt`
 # rows, each becoming one EVENT_REVENUE transaction linked to the event.
