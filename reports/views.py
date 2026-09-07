@@ -96,6 +96,7 @@ class PublicFinancialReportView(APIView):
                     cost += amount
             event_results.append({
                 'id': event.id, 'name': event.name, 'date': event.date,
+                'status': event.status,
                 'revenue': revenue, 'cost': cost, 'result': revenue - cost,
             })
 
