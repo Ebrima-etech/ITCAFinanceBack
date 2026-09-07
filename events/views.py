@@ -2,11 +2,12 @@ from django.utils.dateparse import parse_date
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from accounts.permissions import ReadOnlyOrAdminFinance
 from activitylog.utils import record_activity
 from ledger.models import Transaction, TransactionType
-from .models import Event
+from .models import Event, EventPartner
 from .serializers import (
     EventListSerializer,
     EventDetailSerializer,
@@ -119,3 +120,94 @@ class EventImportRevenueView(APIView):
         )
 
         return Response({'rowsImported': len(rows)})
+
+
+# Event Partners (Sponsorship applications)
+class EventPartnerListCreateView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Public list - show only approved partners
+        partners = EventPartner.objects.filter(status='approved')
+        data = [
+            {
+                'id': str(p.id),
+                'organizationName': p.organization_name,
+                'logoUrl': p.logo_url,
+                'sponsorshipLevel': p.sponsorship_level,
+            }
+            for p in partners
+        ]
+        return Response(data)
+
+    def post(self, request):
+        # Public application submission
+        data = {
+            'organization_name': request.data.get('organizationName'),
+            'contact_person': request.data.get('contactPerson'),
+            'email': request.data.get('email'),
+            'phone': request.data.get('phone'),
+            'website': request.data.get('website'),
+            'logo_url': request.data.get('logoUrl'),
+            'description': request.data.get('description'),
+            'sponsorship_level': request.data.get('sponsorshipLevel', 'bronze'),
+        }
+
+        if not all([data['organization_name'], data['contact_person'], data['email'], data['phone']]):
+            raise ValidationError('Missing required fields')
+
+        partner = EventPartner.objects.create(**data)
+
+        record_activity(
+            action='CREATE', entity_type='EventPartner', entity_id=str(partner.id),
+            actor=None, details={'organization': partner.organization_name},
+        )
+
+        return Response({
+            'id': str(partner.id),
+            'status': partner.status,
+            'message': 'Application submitted successfully. We will review your application shortly.'
+        }, status=201)
+
+
+class EventPartnerDetailView(APIView):
+    permission_classes = [ReadOnlyOrAdminFinance]
+
+    def get_object(self, pk):
+        try:
+            return EventPartner.objects.get(pk=pk)
+        except EventPartner.DoesNotExist:
+            raise NotFound('Partner not found')
+
+    def get(self, request, pk):
+        partner = self.get_object(pk)
+        return Response({
+            'id': str(partner.id),
+            'organizationName': partner.organization_name,
+            'contactPerson': partner.contact_person,
+            'email': partner.email,
+            'phone': partner.phone,
+            'website': partner.website,
+            'logoUrl': partner.logo_url,
+            'description': partner.description,
+            'sponsorshipLevel': partner.sponsorship_level,
+            'status': partner.status,
+            'createdAt': partner.created_at,
+        })
+
+    def patch(self, request, pk):
+        partner = self.get_object(pk)
+        if 'status' in request.data:
+            partner.status = request.data['status']
+            partner.save()
+
+            record_activity(
+                action='UPDATE', entity_type='EventPartner', entity_id=str(partner.id),
+                actor=request.user, details={'status': partner.status},
+            )
+
+        return Response({
+            'id': str(partner.id),
+            'status': partner.status,
+            'organizationName': partner.organization_name,
+        })
