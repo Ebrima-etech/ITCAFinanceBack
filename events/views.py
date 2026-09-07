@@ -186,6 +186,27 @@ class EventPartnerListCreateView(APIView):
         }, status=201)
 
 
+class AllEventPartnersListView(APIView):
+    permission_classes = [ReadOnlyOrAdminFinance]
+
+    def get(self, request):
+        partners = EventPartner.objects.all()
+        data = [
+            {
+                'id': str(p.id),
+                'event': {'id': str(p.event_id), 'name': p.event.name},
+                'organizationName': p.organization_name,
+                'contactPerson': p.contact_person,
+                'email': p.email,
+                'sponsorshipLevel': p.sponsorship_level,
+                'status': p.status,
+                'createdAt': p.created_at,
+            }
+            for p in partners
+        ]
+        return Response(data)
+
+
 class EventPartnerDetailView(APIView):
     permission_classes = [ReadOnlyOrAdminFinance]
 
