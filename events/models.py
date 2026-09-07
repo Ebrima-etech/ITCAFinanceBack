@@ -36,7 +36,7 @@ class Event(models.Model):
         super().save(*args, **kwargs)
 
 
-# Event sponsorship/partnership opportunities
+# Event sponsorship/partnership applications - partners apply for specific events
 class EventPartner(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending Review'),
@@ -45,6 +45,7 @@ class EventPartner(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='partners', null=True)
     organization_name = models.CharField(max_length=255)
     contact_person = models.CharField(max_length=255)
     email = models.EmailField()
@@ -64,3 +65,4 @@ class EventPartner(models.Model):
     class Meta:
         db_table = 'event_partners'
         ordering = ['-created_at']
+        unique_together = ['event', 'email']

@@ -122,16 +122,22 @@ class EventImportRevenueView(APIView):
         return Response({'rowsImported': len(rows)})
 
 
-# Event Partners (Sponsorship applications)
+# Event Partners (Sponsorship applications for specific events)
 class EventPartnerListCreateView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request):
-        # Public list - show only approved partners
-        partners = EventPartner.objects.filter(status='approved')
+    def get(self, request, event_id):
+        # Get approved partners for an event
+        try:
+            event = Event.objects.get(pk=event_id)
+        except Event.DoesNotExist:
+            raise NotFound('Event not found')
+
+        partners = EventPartner.objects.filter(event=event, status='approved')
         data = [
             {
                 'id': str(p.id),
+                'eventId': str(p.event_id),
                 'organizationName': p.organization_name,
                 'logoUrl': p.logo_url,
                 'sponsorshipLevel': p.sponsorship_level,
@@ -140,9 +146,15 @@ class EventPartnerListCreateView(APIView):
         ]
         return Response(data)
 
-    def post(self, request):
-        # Public application submission
+    def post(self, request, event_id):
+        # Public application submission for specific event
+        try:
+            event = Event.objects.get(pk=event_id)
+        except Event.DoesNotExist:
+            raise NotFound('Event not found')
+
         data = {
+            'event': event,
             'organization_name': request.data.get('organizationName'),
             'contact_person': request.data.get('contactPerson'),
             'email': request.data.get('email'),
@@ -156,11 +168,15 @@ class EventPartnerListCreateView(APIView):
         if not all([data['organization_name'], data['contact_person'], data['email'], data['phone']]):
             raise ValidationError('Missing required fields')
 
+        # Check if already applied
+        if EventPartner.objects.filter(event=event, email=data['email']).exists():
+            raise ValidationError('This email has already applied for this event')
+
         partner = EventPartner.objects.create(**data)
 
         record_activity(
             action='CREATE', entity_type='EventPartner', entity_id=str(partner.id),
-            actor=None, details={'organization': partner.organization_name},
+            actor=None, details={'event': event.name, 'organization': partner.organization_name},
         )
 
         return Response({
