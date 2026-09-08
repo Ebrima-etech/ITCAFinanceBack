@@ -165,8 +165,10 @@ class EventPartnerListCreateView(APIView):
             'sponsorship_level': request.data.get('sponsorshipLevel', 'bronze'),
         }
 
-        if not all([data['organization_name'], data['contact_person'], data['email'], data['phone']]):
-            raise ValidationError('Missing required fields')
+        required_fields = ['organization_name', 'contact_person', 'email', 'phone', 'description']
+        missing = [f for f in required_fields if not data.get(f)]
+        if missing:
+            raise ValidationError(f'Missing required fields: {", ".join(missing)}')
 
         # Check if already applied
         if EventPartner.objects.filter(event=event, email=data['email']).exists():
