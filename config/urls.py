@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 from accounts.models import User
-from events.views import AllEventPartnersListView, EventPartnerDetailView
 
 
 # Phase 0 proof: one route that talks to the database, so the frontend has
@@ -22,9 +21,7 @@ urlpatterns = [
     path('api/users', include('accounts.urls')),
     path('api/activity-log', include('activitylog.urls')),
     path('api/transactions', include('ledger.urls')),
-    path('api/events', include('events.urls')),
-    path('api/event-partners', AllEventPartnersListView.as_view()),
-    path('api/event-partners/<uuid:pk>/', EventPartnerDetailView.as_view()),
+    path('api/events/', include('events.urls')),
     path('api/membership-dues', include('dues.urls')),
     path('api/budget', include('budget.urls')),
     path('api/dashboard', include('dashboard.urls')),
