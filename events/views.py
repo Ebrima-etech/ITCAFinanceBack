@@ -206,6 +206,42 @@ class AllEventPartnersListView(APIView):
         ]
         return Response(data)
 
+    def post(self, request):
+        # Admin creating a partner directly
+        try:
+            event = Event.objects.get(pk=request.data.get('eventId'))
+        except Event.DoesNotExist:
+            raise NotFound('Event not found')
+
+        data = {
+            'event': event,
+            'organization_name': request.data.get('organizationName'),
+            'contact_person': request.data.get('contactPerson'),
+            'email': request.data.get('email'),
+            'phone': request.data.get('phone'),
+            'website': request.data.get('website'),
+            'logo_url': request.data.get('logoUrl'),
+            'description': request.data.get('description'),
+            'sponsorship_level': request.data.get('sponsorshipLevel', 'bronze'),
+            'status': request.data.get('status', 'approved'),
+        }
+
+        if not all([data['organization_name'], data['contact_person'], data['email'], data['phone']]):
+            raise ValidationError('Missing required fields: organizationName, contactPerson, email, phone')
+
+        partner = EventPartner.objects.create(**data)
+
+        record_activity(
+            action='CREATE', entity_type='EventPartner', entity_id=str(partner.id),
+            actor=request.user, details={'event': event.name, 'organization': partner.organization_name},
+        )
+
+        return Response({
+            'id': str(partner.id),
+            'status': partner.status,
+            'organizationName': partner.organization_name,
+        }, status=201)
+
 
 class EventPartnerDetailView(APIView):
     permission_classes = [ReadOnlyOrAdminFinance]
@@ -220,6 +256,7 @@ class EventPartnerDetailView(APIView):
         partner = self.get_object(pk)
         return Response({
             'id': str(partner.id),
+            'eventId': str(partner.event_id),
             'organizationName': partner.organization_name,
             'contactPerson': partner.contact_person,
             'email': partner.email,
@@ -234,17 +271,48 @@ class EventPartnerDetailView(APIView):
 
     def patch(self, request, pk):
         partner = self.get_object(pk)
+
+        # Allow admin to update any field
         if 'status' in request.data:
             partner.status = request.data['status']
-            partner.save()
+        if 'organizationName' in request.data:
+            partner.organization_name = request.data['organizationName']
+        if 'contactPerson' in request.data:
+            partner.contact_person = request.data['contactPerson']
+        if 'email' in request.data:
+            partner.email = request.data['email']
+        if 'phone' in request.data:
+            partner.phone = request.data['phone']
+        if 'website' in request.data:
+            partner.website = request.data['website']
+        if 'logoUrl' in request.data:
+            partner.logo_url = request.data['logoUrl']
+        if 'description' in request.data:
+            partner.description = request.data['description']
+        if 'sponsorshipLevel' in request.data:
+            partner.sponsorship_level = request.data['sponsorshipLevel']
 
-            record_activity(
-                action='UPDATE', entity_type='EventPartner', entity_id=str(partner.id),
-                actor=request.user, details={'status': partner.status},
-            )
+        partner.save()
+
+        record_activity(
+            action='UPDATE', entity_type='EventPartner', entity_id=str(partner.id),
+            actor=request.user, details={'changed': list(request.data.keys())},
+        )
 
         return Response({
             'id': str(partner.id),
             'status': partner.status,
             'organizationName': partner.organization_name,
         })
+
+    def delete(self, request, pk):
+        partner = self.get_object(pk)
+        partner_id = str(partner.id)
+        partner.delete()
+
+        record_activity(
+            action='DELETE', entity_type='EventPartner', entity_id=partner_id,
+            actor=request.user,
+        )
+
+        return Response({'id': partner_id})
