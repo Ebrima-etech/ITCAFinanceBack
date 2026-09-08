@@ -155,14 +155,14 @@ class EventPartnerListCreateView(APIView):
 
         data = {
             'event': event,
-            'organization_name': request.data.get('organizationName'),
-            'contact_person': request.data.get('contactPerson'),
+            'organization_name': request.data.get('organization_name'),
+            'contact_person': request.data.get('contact_person'),
             'email': request.data.get('email'),
             'phone': request.data.get('phone'),
             'website': request.data.get('website'),
-            'logo_url': request.data.get('logoUrl'),
+            'logo_url': request.data.get('logo_url'),
             'description': request.data.get('description'),
-            'sponsorship_level': request.data.get('sponsorshipLevel', 'bronze'),
+            'sponsorship_level': request.data.get('sponsorship_level', 'bronze'),
         }
 
         required_fields = ['organization_name', 'contact_person', 'email', 'phone', 'description']
