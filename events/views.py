@@ -211,20 +211,20 @@ class AllEventPartnersListView(APIView):
     def post(self, request):
         # Admin creating a partner directly
         try:
-            event = Event.objects.get(pk=request.data.get('eventId'))
+            event = Event.objects.get(pk=request.data.get('event_id'))
         except Event.DoesNotExist:
             raise NotFound('Event not found')
 
         data = {
             'event': event,
-            'organization_name': request.data.get('organizationName'),
-            'contact_person': request.data.get('contactPerson'),
+            'organization_name': request.data.get('organization_name'),
+            'contact_person': request.data.get('contact_person'),
             'email': request.data.get('email'),
             'phone': request.data.get('phone'),
             'website': request.data.get('website'),
-            'logo_url': request.data.get('logoUrl'),
+            'logo_url': request.data.get('logo_url'),
             'description': request.data.get('description'),
-            'sponsorship_level': request.data.get('sponsorshipLevel', 'bronze'),
+            'sponsorship_level': request.data.get('sponsorship_level', 'bronze'),
             'status': request.data.get('status', 'approved'),
         }
 
@@ -277,22 +277,22 @@ class EventPartnerDetailView(APIView):
         # Allow admin to update any field
         if 'status' in request.data:
             partner.status = request.data['status']
-        if 'organizationName' in request.data:
-            partner.organization_name = request.data['organizationName']
-        if 'contactPerson' in request.data:
-            partner.contact_person = request.data['contactPerson']
+        if 'organization_name' in request.data:
+            partner.organization_name = request.data['organization_name']
+        if 'contact_person' in request.data:
+            partner.contact_person = request.data['contact_person']
         if 'email' in request.data:
             partner.email = request.data['email']
         if 'phone' in request.data:
             partner.phone = request.data['phone']
         if 'website' in request.data:
             partner.website = request.data['website']
-        if 'logoUrl' in request.data:
-            partner.logo_url = request.data['logoUrl']
+        if 'logo_url' in request.data:
+            partner.logo_url = request.data['logo_url']
         if 'description' in request.data:
             partner.description = request.data['description']
-        if 'sponsorshipLevel' in request.data:
-            partner.sponsorship_level = request.data['sponsorshipLevel']
+        if 'sponsorship_level' in request.data:
+            partner.sponsorship_level = request.data['sponsorship_level']
 
         partner.save()
 
