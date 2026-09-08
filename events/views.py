@@ -126,10 +126,10 @@ class EventImportRevenueView(APIView):
 class EventPartnerListCreateView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, event_id):
+    def get(self, request, pk):
         # Get approved partners for an event
         try:
-            event = Event.objects.get(pk=event_id)
+            event = Event.objects.get(pk=pk)
         except Event.DoesNotExist:
             raise NotFound('Event not found')
 
@@ -146,10 +146,10 @@ class EventPartnerListCreateView(APIView):
         ]
         return Response(data)
 
-    def post(self, request, event_id):
+    def post(self, request, pk):
         # Public application submission for specific event
         try:
-            event = Event.objects.get(pk=event_id)
+            event = Event.objects.get(pk=pk)
         except Event.DoesNotExist:
             raise NotFound('Event not found')
 
@@ -246,14 +246,14 @@ class AllEventPartnersListView(APIView):
 class EventPartnerDetailView(APIView):
     permission_classes = [ReadOnlyOrAdminFinance]
 
-    def get_object(self, pk):
+    def get_object(self, partner_id):
         try:
-            return EventPartner.objects.get(pk=pk)
+            return EventPartner.objects.get(pk=partner_id)
         except EventPartner.DoesNotExist:
             raise NotFound('Partner not found')
 
-    def get(self, request, pk):
-        partner = self.get_object(pk)
+    def get(self, request, pk, partner_id):
+        partner = self.get_object(partner_id)
         return Response({
             'id': str(partner.id),
             'eventId': str(partner.event_id),
@@ -269,8 +269,8 @@ class EventPartnerDetailView(APIView):
             'createdAt': partner.created_at,
         })
 
-    def patch(self, request, pk):
-        partner = self.get_object(pk)
+    def patch(self, request, pk, partner_id):
+        partner = self.get_object(partner_id)
 
         # Allow admin to update any field
         if 'status' in request.data:
